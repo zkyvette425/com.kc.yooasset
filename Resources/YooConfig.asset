@@ -12,4 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cd8f39e9b536214eb086b742e53c155, type: 3}
   m_Name: YooConfig
   m_EditorClassIdentifier: 
-  PlayMode: 0
+  playMode: 2
+  cdn:
+  - https://iot.guangzitec.com/ota/hotfix
+  useCdnIndex: 0
