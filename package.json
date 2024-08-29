@@ -1,7 +1,7 @@
 {
   "name": "com.kc.yooasset",
   "displayName": "KC.YooAsset",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "unity": "2022.3",
   "author": "KunZhou <450228418@qq.com>",
   "description": "The purpose of this starter kit is to provide the data structure and development guidelines for new packages meant for the **Unity Package Manager (UPM)**.",
@@ -22,7 +22,6 @@
   },
   "homepage": "https://github.com/zkyvette425/com.kc.yooasset#readme",
   "dependencies": {
-    "com.cysharp.unitask": "2.5.5",
     "com.unity.scriptablebuildpipeline": "2.1.3"
   }
 }
