@@ -4,7 +4,7 @@ using YooAsset;
 
 namespace KC
 {
-    [CreateAssetMenu(menuName = "YooAsset/YooConfig",fileName = "YooConfig",order = 0)]
+    [CreateAssetMenu(menuName = "KC/YooAsset/YooConfig",fileName = "YooConfig",order = 0)]
     public class YooConfig : ScriptableObject
     {
         public EPlayMode playMode;
