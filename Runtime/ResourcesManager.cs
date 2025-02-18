@@ -57,19 +57,21 @@ namespace KC
                 case EPlayMode.EditorSimulateMode:
                 {
                     var simulateBuildResult =
-                        EditorSimulateModeHelper.SimulateBuild(EDefaultBuildPipeline.ScriptableBuildPipeline,
-                            packageName);
-                    var createParameters = new EditorSimulateModeParameters();
-                    createParameters.EditorFileSystemParameters =
-                        FileSystemParameters.CreateDefaultEditorFileSystemParameters(simulateBuildResult);
+                        EditorSimulateModeHelper.SimulateBuild(packageName);
+                    var root = simulateBuildResult.PackageRootDirectory;
+                    var createParameters = new EditorSimulateModeParameters
+                    {
+                        EditorFileSystemParameters = FileSystemParameters.CreateDefaultEditorFileSystemParameters(root)
+                    };
                     await _package.InitializeAsync(createParameters);
                     break;
                 }
                 case EPlayMode.OfflinePlayMode:
                 {
-                    var createParameters = new OfflinePlayModeParameters();
-                    createParameters.BuildinFileSystemParameters =
-                        FileSystemParameters.CreateDefaultBuildinFileSystemParameters();
+                    var createParameters = new OfflinePlayModeParameters
+                    {
+                        BuildinFileSystemParameters = FileSystemParameters.CreateDefaultBuildinFileSystemParameters()
+                    };
                     await _package.InitializeAsync(createParameters);
                     break;
                 }
@@ -78,15 +80,30 @@ namespace KC
                     string defaultHostServer = GetHostServerURL();
                     string fallbackHostServer = GetHostServerURL();
                     IRemoteServices remoteServices = new RemoteServices(defaultHostServer, fallbackHostServer);
-                    var createParameters = new HostPlayModeParameters();
-                    createParameters.BuildinFileSystemParameters =
-                        FileSystemParameters.CreateDefaultBuildinFileSystemParameters();
-                    createParameters.CacheFileSystemParameters =
-                        FileSystemParameters.CreateDefaultCacheFileSystemParameters(remoteServices);
-               
+                    var createParameters = new HostPlayModeParameters
+                    {
+                        BuildinFileSystemParameters = FileSystemParameters.CreateDefaultBuildinFileSystemParameters(),
+                        CacheFileSystemParameters = FileSystemParameters.CreateDefaultCacheFileSystemParameters(remoteServices)
+                    };
+
                     await _package.InitializeAsync(createParameters).ToUniTask();
                     break;
                 }
+                case EPlayMode.WebPlayMode:
+                {
+                    string defaultHostServer = GetHostServerURL();
+                    string fallbackHostServer = GetHostServerURL();
+                    var createParameters = new WebPlayModeParameters();
+#if UNITY_WEBGL && WEIXINMINIGAME && !UNITY_EDITOR
+            IRemoteServices remoteServices = new RemoteServices(defaultHostServer, fallbackHostServer);
+            createParameters.WebServerFileSystemParameters =
+                WechatFileSystemCreater.CreateWechatFileSystemParameters(remoteServices, Application.productName);
+#else
+                    createParameters.WebServerFileSystemParameters = FileSystemParameters.CreateDefaultWebServerFileSystemParameters();
+#endif
+                    await _package.InitializeAsync(createParameters).ToUniTask();
+                }
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -168,22 +185,19 @@ namespace KC
         
         public async UniTask Download(ResourceDownloaderOperation downloader)
         {
-            int totalDownloadCount = downloader.TotalDownloadCount;
-            long totalDownloadBytes = downloader.TotalDownloadBytes;
-
-            downloader.OnDownloadErrorCallback += (name, error) => Debug.LogError($"下载资源:{name}错误,原因:{error}");
-            downloader.OnDownloadProgressCallback += (count, downloadCount, bytes, downloadBytes) =>
+            downloader.DownloadErrorCallback += t => Debug.LogError($"下载资源:{t.FileName}错误,原因:{t.ErrorInfo}");
+            downloader.DownloadUpdateCallback += t =>
             {
                 Debug.Log(
-                    $"下载资源中,总下载数量:{count} 当前下载数量:{downloadCount} 总资源大小:{bytes / 1024}kb 当前下载资源大小:{downloadBytes / 1024}kb");
+                    $"下载资源中,总下载数量:{t.TotalDownloadCount} 当前下载数量:{t.CurrentDownloadCount} 总资源大小:{t.TotalDownloadBytes / 1024}kb 当前下载资源大小:{t.CurrentDownloadBytes / 1024}kb");
             };
             
-            downloader.OnDownloadOverCallback += succeed =>
+            downloader.DownloadFinishCallback += succeed =>
             {
                 Debug.Log("资源下载完成");
             };
 
-            downloader.OnStartDownloadFileCallback += (name, bytes) => Debug.Log($"开始下载资源:{name} 资源大小:{bytes / 1024}kb");
+            downloader.DownloadFileBeginCallback += t => Debug.Log($"开始下载资源:{t.FileName} 资源大小:{t.FileSize / 1024}kb");
 
             downloader.BeginDownload();
 
@@ -197,7 +211,7 @@ namespace KC
                 Debug.Log("资源下载成功");
             }
 
-            var clearOperation = _package.ClearUnusedBundleFilesAsync();
+            var clearOperation = _package.UnloadUnusedAssetsAsync();
             await clearOperation.ToUniTask();
         }
         
